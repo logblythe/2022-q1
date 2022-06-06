@@ -2,17 +2,26 @@ import React from "react";
 import type { NextApiRequest, NextPage } from "next";
 import { useUserAgent } from "next-useragent";
 import { useCookies } from "react-cookie";
+import geoip, { Lookup } from "geoip-lite";
 import { parseCookies } from "../utils";
 
 export async function getServerSideProps({ req }: { req: NextApiRequest }) {
   const cookie = parseCookies(req);
 
-  const ip = req.headers["x-real-ip"] || req.socket.remoteAddress;
+  const dynamicIp = req.headers["x-real-ip"] || req.socket.remoteAddress;
+  const getIp = (): string | undefined => {
+    if (!dynamicIp) return;
+    if (typeof dynamicIp === "string") return dynamicIp;
+    return dynamicIp[0];
+  };
+  const ip = getIp();
+  const geo = ip ? geoip.lookup(ip) : undefined;
+
   const userAgent = req.headers["user-agent"];
 
   return {
     props: {
-      ip,
+      geo,
       userAgent,
       cookie,
     }, // will be passed to the page component as props
@@ -20,12 +29,14 @@ export async function getServerSideProps({ req }: { req: NextApiRequest }) {
 }
 
 const Home: NextPage<{
-  ip: string;
+  geo?: Lookup;
   userAgent: string;
   cookie: any;
 }> = (props) => {
   const ua = useUserAgent(props.userAgent);
   const [_, setCookie] = useCookies(["user"]);
+  if (!props.geo) return null;
+  const { area, city, country } = props.geo;
 
   if (props.cookie.user) {
     const count: number = Number(props.cookie.user) + 1;
@@ -47,7 +58,9 @@ const Home: NextPage<{
   return (
     <>
       <div>
-        <div>IP: {props.ip}</div>
+        <div>
+          Location:{city},{country}
+        </div>
         <div>Browser: {ua.browser}</div>
         <div>No. of visit: {props.cookie.user ?? 1}</div>
       </div>
