@@ -4,6 +4,8 @@ import { useUserAgent } from "next-useragent";
 import { useCookies } from "react-cookie";
 import geoip, { Lookup } from "geoip-lite";
 import { parseCookies } from "../utils";
+import Map from "../components/Map";
+import { GoogleMap } from "@react-google-maps/api";
 
 export async function getServerSideProps({ req }: { req: NextApiRequest }) {
   const cookie = parseCookies(req);
@@ -35,8 +37,8 @@ const Home: NextPage<{
 }> = (props) => {
   const ua = useUserAgent(props.userAgent);
   const [_, setCookie] = useCookies(["user"]);
-  if (!props.geo) return null;
-  const { area, city, country } = props.geo;
+  if (!props.geo) return <div> no geo</div>;
+  const { area, city, country, ll } = props.geo;
 
   if (props.cookie.user) {
     const count: number = Number(props.cookie.user) + 1;
@@ -44,16 +46,30 @@ const Home: NextPage<{
       path: "/",
       maxAge: 60 * 60, // Expires after 1hr
       sameSite: true,
-      httpOnly: true,
     });
   } else {
     setCookie("user", JSON.stringify(2), {
       path: "/",
       maxAge: 60 * 60, // Expires after 1hr
       sameSite: true,
-      httpOnly: true,
     });
   }
+
+  return (
+    <div>
+      <Map lat={ll[0]} lng={ll[1]} browser={ua.browser} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: 16,
+          height: "4vh",
+        }}
+      >
+        No. of visit: {props.cookie.user ?? 1}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -63,6 +79,7 @@ const Home: NextPage<{
         </div>
         <div>Browser: {ua.browser}</div>
         <div>No. of visit: {props.cookie.user ?? 1}</div>
+        <Map lat={ll[0]} lng={ll[1]} browser={ua.browser} />
       </div>
     </>
   );
