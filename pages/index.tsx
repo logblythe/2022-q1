@@ -33,12 +33,14 @@ const Home: NextPage<{
       path: "/",
       maxAge: 60 * 60, // Expires after 1hr
       sameSite: true,
+      httpOnly: true,
     });
   } else {
     setCookie("user", JSON.stringify(2), {
       path: "/",
       maxAge: 60 * 60, // Expires after 1hr
       sameSite: true,
+      httpOnly: true,
     });
   }
 
